@@ -2,8 +2,8 @@ name: Deploy WordPress Config to AWS EC2
 
 on:
   push:
-    branches: develop
-
+    branches: [develop]
+    
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y awscli
+          sudo apt-get install -y nginx
       - name: Deploy to EC2 instance
         run: |
           aws ec2 run-instances \
@@ -32,6 +32,7 @@ jobs:
           # Connect to instance and execute commands
           ssh -i web-server-key.pem 54.169.217.138
           # Your deployment commands here
+          
       - name: Terminate instance
         run: |
           aws ec2 terminate-instances --instance-ids i-0e304bc5989d7090a
