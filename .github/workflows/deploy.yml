@@ -1,0 +1,52 @@
+name: Deploy WordPress Config to AWS EC2
+
+on:
+  push:
+    branches: develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          region: ${{ secrets.AWS_REGION }}
+ 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+      - name: Deploy to EC2 instance
+        run: |
+          aws ec2 run-instances \
+            --instance-type t2.micro \
+            --key-name web-server-key \
+            --security-group-ids web-server-sec-gp   
+
+
+          # Wait for instance to be running
+          aws ec2 wait instance-status-ok --instance-ids i-0e304bc5989d7090a
+
+          # Connect to instance and execute commands
+          ssh -i web-server-key.pem 54.169.217.138
+          # Your deployment commands here
+
+      - name: Terminate instance
+        run: |
+          aws ec2 terminate-instances --instance-ids i-0e304bc5989d7090a
+
+      - name: Deploy WordPress config
+        run: |
+          scp -i web-server-key.pem -r /var/www/html 54.169.217.138:/var/www/html
+
+      - name: Set WordPress permissions
+        run: |
+          ssh -i web-server-key.pem 54.169.217.138
+          sudo chown -R www-data:www-data /var/www/html
